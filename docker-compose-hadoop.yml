@@ -1,36 +1,36 @@
 # Cluster Hadoop du TP : 2 maîtres (namenode, resourcemanager) + 2 travailleurs (datanode, nodemanager)
 # Basé sur le docker-compose officiel de l'image apache/hadoop
-services:
-  namenode:
-    image: apache/hadoop:3.4.3
-    hostname: namenode
-    command: ["hdfs", "namenode"]
-    ports:
-      - 9870:9870        # interface web HDFS
-    env_file:
-      - ./config
-    environment:
-      ENSURE_NAMENODE_DIR: "/tmp/hadoop-root/dfs/name"
-    volumes:
-      - ./data:/data     # notre dossier data visible dans le conteneur sous /data
+services:                                  # liste des conteneurs du cluster
+  namenode:                                # maître HDFS : sait où se trouve chaque bloc de chaque fichier
+    image: apache/hadoop:3.4.1             # image officielle Hadoop (contient Java 11 et javac)
+    hostname: namenode                     # nom réseau utilisé par fs.defaultFS=hdfs://namenode dans config
+    command: ["hdfs", "namenode"]          # démarre le service NameNode
+    ports:                                 # ports exposés sur le poste
+      - 9870:9870                          # interface web HDFS → http://localhost:9870
+    env_file:                              # variables lues pour générer les fichiers *-site.xml
+      - ./config                           # notre fichier de configuration Hadoop
+    environment:                           # variables propres à ce conteneur
+      ENSURE_NAMENODE_DIR: "/tmp/hadoop-root/dfs/name" # formate HDFS au premier démarrage si ce dossier n'existe pas
+    volumes:                               # dossiers du poste montés dans le conteneur
+      - ./data:/data                       # notre dossier data visible dans le conteneur sous /data
 
-  datanode:
-    image: apache/hadoop:3.4.3
-    command: ["hdfs", "datanode"]
-    env_file:
-      - ./config
+  datanode:                                # travailleur HDFS : stocke physiquement les blocs
+    image: apache/hadoop:3.4.1             # même image pour tous les services
+    command: ["hdfs", "datanode"]          # démarre le service DataNode
+    env_file:                              # même configuration que les autres
+      - ./config                           # notre fichier de configuration Hadoop
 
-  resourcemanager:
-    image: apache/hadoop:3.4.3
-    hostname: resourcemanager
-    command: ["yarn", "resourcemanager"]
-    ports:
-      - 8088:8088        # interface web YARN
-    env_file:
-      - ./config
+  resourcemanager:                         # maître YARN : distribue les ressources (mémoire, CPU) aux jobs
+    image: apache/hadoop:3.4.1             # même image pour tous les services
+    hostname: resourcemanager              # nom réseau utilisé par yarn.resourcemanager.hostname dans config
+    command: ["yarn", "resourcemanager"]   # démarre le service ResourceManager
+    ports:                                 # ports exposés sur le poste
+      - 8088:8088                          # interface web YARN → http://localhost:8088
+    env_file:                              # même configuration que les autres
+      - ./config                           # notre fichier de configuration Hadoop
 
-  nodemanager:
-    image: apache/hadoop:3.4.3
-    command: ["yarn", "nodemanager"]
-    env_file:
-      - ./config
+  nodemanager:                             # travailleur YARN : exécute les tâches map et reduce dans des conteneurs
+    image: apache/hadoop:3.4.1             # même image pour tous les services
+    command: ["yarn", "nodemanager"]       # démarre le service NodeManager
+    env_file:                              # même configuration que les autres
+      - ./config                           # notre fichier de configuration Hadoop

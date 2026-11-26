@@ -1,26 +1,65 @@
+# Configuration Hadoop, lue par chaque conteneur (env_file du docker-compose).
+# Format : FICHIER.XML_propriété=valeur → l'image écrit la propriété dans le fichier XML indiqué.
+# Les commentaires doivent rester sur leur propre ligne (pas de commentaire en fin de ligne dans un env_file).
+
+# --- core-site.xml : système de fichiers par défaut ---
+# Ancien nom de la propriété ci-dessous (gardé pour compatibilité)
 CORE-SITE.XML_fs.default.name=hdfs://namenode
+# Les chemins sans préfixe (/user/hadoop/...) désignent HDFS sur le conteneur namenode
 CORE-SITE.XML_fs.defaultFS=hdfs://namenode
+
+# --- hdfs-site.xml : HDFS ---
+# Adresse RPC du NameNode (port 8020)
 HDFS-SITE.XML_dfs.namenode.rpc-address=namenode:8020
+# Un seul DataNode → une seule copie de chaque bloc
 HDFS-SITE.XML_dfs.replication=1
+
+# --- mapred-site.xml : MapReduce ---
+# Les jobs MapReduce s'exécutent sur YARN (et pas en local)
 MAPRED-SITE.XML_mapreduce.framework.name=yarn
+# Correction A0 : chemin de Hadoop dans l'image, pour l'ApplicationMaster (sinon « Could not find MRAppMaster »)
 MAPRED-SITE.XML_yarn.app.mapreduce.am.env=HADOOP_MAPRED_HOME=/opt/hadoop
+# Correction A0 : même chemin pour les tâches map
 MAPRED-SITE.XML_mapreduce.map.env=HADOOP_MAPRED_HOME=/opt/hadoop
+# Correction A0 : même chemin pour les tâches reduce
 MAPRED-SITE.XML_mapreduce.reduce.env=HADOOP_MAPRED_HOME=/opt/hadoop
+
+# --- yarn-site.xml : YARN ---
+# Nom réseau du ResourceManager
 YARN-SITE.XML_yarn.resourcemanager.hostname=resourcemanager
+# Ne pas tuer un conteneur qui dépasse la mémoire physique (évite des échecs dans Docker)
 YARN-SITE.XML_yarn.nodemanager.pmem-check-enabled=false
+# Garder les fichiers d'un conteneur 600 s après la fin (pratique pour déboguer)
 YARN-SITE.XML_yarn.nodemanager.delete.debug-delay-sec=600
+# Ne pas tuer un conteneur qui dépasse la mémoire virtuelle
 YARN-SITE.XML_yarn.nodemanager.vmem-check-enabled=false
+# Service de shuffle : transfère les sorties des map vers les reduce
 YARN-SITE.XML_yarn.nodemanager.aux-services=mapreduce_shuffle
+
+# --- capacity-scheduler.xml : ordonnanceur YARN ---
+# Nombre maximal d'applications en attente ou en cours
 CAPACITY-SCHEDULER.XML_yarn.scheduler.capacity.maximum-applications=10000
+# Part maximale des ressources réservée aux ApplicationMasters
 CAPACITY-SCHEDULER.XML_yarn.scheduler.capacity.maximum-am-resource-percent=0.1
+# Les ressources sont comptées en mémoire seulement
 CAPACITY-SCHEDULER.XML_yarn.scheduler.capacity.resource-calculator=org.apache.hadoop.yarn.util.resource.DefaultResourceCalculator
+# Une seule file d'attente : default
 CAPACITY-SCHEDULER.XML_yarn.scheduler.capacity.root.queues=default
+# La file default reçoit 100 % du cluster
 CAPACITY-SCHEDULER.XML_yarn.scheduler.capacity.root.default.capacity=100
+# Un utilisateur peut utiliser toute la capacité de la file
 CAPACITY-SCHEDULER.XML_yarn.scheduler.capacity.root.default.user-limit-factor=1
+# Capacité maximale de la file : 100 %
 CAPACITY-SCHEDULER.XML_yarn.scheduler.capacity.root.default.maximum-capacity=100
+# La file est active
 CAPACITY-SCHEDULER.XML_yarn.scheduler.capacity.root.default.state=RUNNING
+# Tout le monde peut soumettre un job
 CAPACITY-SCHEDULER.XML_yarn.scheduler.capacity.root.default.acl_submit_applications=*
+# Tout le monde peut administrer la file
 CAPACITY-SCHEDULER.XML_yarn.scheduler.capacity.root.default.acl_administer_queue=*
+# Nombre d'occasions manquées avant d'accepter un nœud non local
 CAPACITY-SCHEDULER.XML_yarn.scheduler.capacity.node-locality-delay=40
+# Pas d'affectation automatique d'utilisateurs à des files
 CAPACITY-SCHEDULER.XML_yarn.scheduler.capacity.queue-mappings=
+# Pas de remplacement de la file choisie par l'utilisateur
 CAPACITY-SCHEDULER.XML_yarn.scheduler.capacity.queue-mappings-override.enable=false
